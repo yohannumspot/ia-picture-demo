@@ -1,0 +1,285 @@
+document.addEventListener('DOMContentLoaded', function() {
+    const dropArea = document.getElementById('dropArea');
+    const fileInput = document.getElementById('fileInput');
+    const fileInfo = document.getElementById('fileInfo');
+    const imagePreview = document.getElementById('imagePreview');
+    const previewContainer = document.getElementById('previewContainer');
+    const generateBtn = document.getElementById('generateBtn');
+    const resultContainer = document.getElementById('resultContainer');
+    const loadingIndicator = document.getElementById('loadingIndicator');
+    const descriptionText = document.getElementById('descriptionText');
+    const uploadBtn = document.querySelector('.upload-btn');
+    
+    let selectedFile = null;
+
+    console.log('Script chargé. Éléments trouvés:', {
+        dropArea: !!dropArea,
+        fileInput: !!fileInput,
+        uploadBtn: !!uploadBtn
+    });
+
+    // Event listeners for drag and drop functionality
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+    
+    function highlight() {
+        dropArea.classList.add('active');
+    }
+    
+    function unhighlight() {
+        dropArea.classList.remove('active');
+    }
+    
+    // Handle file drop
+    dropArea.addEventListener('drop', handleDrop, false);
+    
+    function handleDrop(e) {
+        console.log('Fichier déposé');
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+    }
+    
+    // Handle file selection via the file input
+    fileInput.addEventListener('change', function() {
+        console.log('Input file changé, fichiers:', this.files.length);
+        handleFiles(this.files);
+    });
+
+    // Add click event to upload button as backup
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', function(e) {
+            console.log('Bouton upload cliqué');
+            e.preventDefault();
+            fileInput.click();
+        });
+    }
+
+    // Additional click handler for the entire drop area
+    dropArea.addEventListener('click', function(e) {
+        console.log('Zone de drop cliquée');
+        if (e.target !== fileInput && !e.target.closest('.upload-btn')) {
+            fileInput.click();
+        }
+    });
+    
+    function handleFiles(files) {
+        console.log('Traitement des fichiers:', files.length);
+        if (files.length > 0) {
+            const file = files[0];
+            console.log('Fichier sélectionné:', file.name, file.type);
+            
+            // Check if the file is an image
+            if (!file.type.match('image.*')) {
+                console.log('Type de fichier invalide');
+                showNotification('Veuillez sélectionner un fichier image valide.', 'error');
+                return;
+            }
+
+            // Check file size (10MB limit)
+            if (file.size > 10 * 1024 * 1024) {
+                console.log('Fichier trop volumineux');
+                showNotification('Le fichier est trop volumineux. Taille maximale : 10MB.', 'error');
+                return;
+            }
+            
+            selectedFile = file;
+            fileInfo.innerHTML = '<span style="color: #2563eb; font-weight: 600;">✓ Sélectionné :</span> ' + file.name + ' (' + formatFileSize(file.size) + ')';
+            
+            // Display image preview with animation
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                console.log('Image chargée pour aperçu');
+                imagePreview.src = e.target.result;
+                previewContainer.style.display = 'block';
+                
+                // Add fade-in animation
+                setTimeout(() => {
+                    previewContainer.style.opacity = '1';
+                    previewContainer.style.transform = 'translateY(0)';
+                }, 10);
+                
+                generateBtn.disabled = false;
+                
+                // Scroll to preview
+                setTimeout(() => {
+                    previewContainer.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center' 
+                    });
+                }, 300);
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    // Format file size helper
+    function formatFileSize(bytes) {
+        if (bytes === 0) return '0 Bytes';
+        const k = 1024;
+        const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+    
+    // Show notification helper
+    function showNotification(message, type) {
+        type = type || 'info';
+        console.log('Notification:', message, type);
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'notification notification-' + type;
+        
+        const iconMap = {
+            'error': '⚠️',
+            'success': '✅',
+            'info': 'ℹ️'
+        };
+        
+        const colorMap = {
+            'error': { bg: '#fee2e2', text: '#dc2626', border: '#fecaca' },
+            'success': { bg: '#dcfce7', text: '#166534', border: '#bbf7d0' },
+            'info': { bg: '#dbeafe', text: '#2563eb', border: '#bfdbfe' }
+        };
+        
+        const colors = colorMap[type] || colorMap.info;
+        
+        notification.innerHTML = '<div class="notification-content"><span class="notification-icon">' + iconMap[type] + '</span><span class="notification-message">' + message + '</span></div>';
+        
+        // Add notification styles
+        notification.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 1000; background: ' + colors.bg + '; color: ' + colors.text + '; padding: 1rem 1.5rem; border-radius: 12px; border: 1px solid ' + colors.border + '; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); transform: translateX(100%); transition: transform 0.3s ease; max-width: 400px;';
+        
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.style.transform = 'translateX(0)';
+        }, 10);
+        
+        // Remove after 4 seconds
+        setTimeout(() => {
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }, 4000);
+    }
+    
+    // Handle Generate Description button click
+    generateBtn.addEventListener('click', async function() {
+        if (!selectedFile) {
+            console.log('Aucun fichier sélectionné');
+            return;
+        }
+        
+        console.log('Début de la génération de description');
+        
+        // Show loading state
+        resultContainer.style.display = 'block';
+        loadingIndicator.style.display = 'block';
+        descriptionText.style.display = 'none';
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation: spin 1s linear infinite;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" fill="none" opacity="0.25"/><path d="M12 2C6.477 2 2 6.477 2 12" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round"/></svg>Analyse en cours...';
+        
+        // Scroll to results
+        setTimeout(() => {
+            resultContainer.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+        }, 300);
+        
+        try {
+            const formData = new FormData();
+            formData.append('image', selectedFile);
+            
+            console.log('Envoi de la requête...');
+            const response = await fetch('/describe', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Échec de la génération de description');
+            }
+            
+            const data = await response.json();
+            console.log('Description reçue:', data.description);
+            
+            // Hide loading and show description with animation
+            loadingIndicator.style.display = 'none';
+            descriptionText.textContent = data.description;
+            descriptionText.style.display = 'block';
+            descriptionText.style.opacity = '0';
+            descriptionText.style.transform = 'translateY(20px)';
+            
+            // Animate description in
+            setTimeout(() => {
+                descriptionText.style.opacity = '1';
+                descriptionText.style.transform = 'translateY(0)';
+            }, 10);
+            
+            showNotification('Description générée avec succès!', 'success');
+            
+        } catch (error) {
+            console.error('Erreur:', error);
+            loadingIndicator.style.display = 'none';
+            descriptionText.innerHTML = '<div style="color: #dc2626; background: #fee2e2; padding: 1rem; border-radius: 8px; border: 1px solid #fecaca;"><strong>❌ Erreur :</strong> ' + error.message + '</div>';
+            descriptionText.style.display = 'block';
+            showNotification('Erreur lors de la génération de la description', 'error');
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Analyser avec l\'IA';
+        }
+    });
+
+    // Add CSS for notifications and debug info
+    const style = document.createElement('style');
+    style.textContent = `
+        .notification-content { 
+            display: flex; 
+            align-items: center; 
+            gap: 0.75rem; 
+            font-weight: 500; 
+        } 
+        .notification-icon { 
+            font-size: 1.25rem; 
+        } 
+        @keyframes spin { 
+            0% { transform: rotate(0deg); } 
+            100% { transform: rotate(360deg); } 
+        }
+        .upload-btn {
+            pointer-events: auto !important;
+            cursor: pointer !important;
+        }
+        .drop-area {
+            cursor: pointer;
+        }
+    `;
+    document.head.appendChild(style);
+
+    // Test final pour vérifier que l'input fonctionne
+    setTimeout(() => {
+        console.log('Test final - Input visible?', fileInput.offsetParent !== null);
+        console.log('Input style:', window.getComputedStyle(fileInput).display);
+    }, 1000);
+});
