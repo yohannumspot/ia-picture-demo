@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ia-picture-demo
+  namespace: ia-demo
+  labels:
+    app: ia-picture-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ia-picture-demo
+  template:
+    metadata:
+      labels:
+        app: ia-picture-demo
+    spec:
+      containers:
+      - name: ia-picture-demo
+        image: yohannumspot/ia-picture-demo:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: PORT
+          value: "3000"
+        - name: OLLAMA_BASE_URL
+          value: "http://<IP_VM_OLLAMA>:11434"
+        - name: OLLAMA_MODEL
+          value: "llama4:scout"
+        volumeMounts:
+        - name: uploads
+          mountPath: /usr/src/app/uploads
+      volumes:
+      - name: uploads
+        emptyDir: {}

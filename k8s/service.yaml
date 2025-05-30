@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ia-picture-demo
+  namespace: ia-demo
+spec:
+  selector:
+    app: ia-picture-demo
+  ports:
+  - protocol: TCP
+    port: 80
+    targetPort: 3000
