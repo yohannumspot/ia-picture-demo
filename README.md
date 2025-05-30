@@ -26,8 +26,11 @@ Une application web simple en **Node.js** permettant d’envoyer une image, puis
   ollama pull llama4:scout
 
 ### 📦 Installation
+
 git clone https://github.com/yohannumspot/ia-picture-demo.git
+
 cd ia-picture-demo
+
 npm install
 
 ### ▶️ Lancement
